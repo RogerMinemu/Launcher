@@ -266,15 +266,6 @@ public class HttpRequest implements Closeable, ProgressObservable {
     }
 
     /**
-     * Check if a connection was ever made
-     *
-     * @return True if a connection is available, false otherwise
-     */
-    public boolean isConnected() {
-        return conn != null;
-    }
-
-    /**
      * Buffer the returned response.
      *
      * @return the buffered response

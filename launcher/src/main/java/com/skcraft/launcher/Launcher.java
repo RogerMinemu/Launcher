@@ -76,6 +76,7 @@ public final class Launcher {
      */
     public Launcher(@NonNull File baseDir) throws IOException {
         this(baseDir, baseDir);
+        
     }
 
     /**
@@ -122,7 +123,7 @@ public final class Launcher {
             if (available <= 6) {
                 suggestedMax = available * 0.48;
             } else {
-                suggestedMax = 4;
+                suggestedMax = 7;
             }
         } catch (Exception ignored) {
         }
@@ -457,8 +458,8 @@ public final class Launcher {
                     launcher.showLauncherWindow();
                 } catch (Throwable t) {
                     log.log(Level.WARNING, "Load failure", t);
-                    SwingHelper.showErrorDialog(null, "Uh oh! The updater couldn't be opened because a " +
-                            "problem was encountered.", "Launcher error", t);
+                    SwingHelper.showErrorDialog(null, "Ups " +
+                            " hemos encontrado un problema :S.", "Reportalo en discord", t);
                 }
             }
         });

@@ -19,7 +19,6 @@ import com.skcraft.launcher.persistence.Persistence;
 import com.skcraft.launcher.swing.*;
 import com.skcraft.launcher.util.SharedLocale;
 import com.skcraft.launcher.util.SwingExecutor;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +28,6 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 
 /**
@@ -40,7 +38,6 @@ public class LoginDialog extends JDialog {
     private final Launcher launcher;
     @Getter private Session session;
 
-    private final JLabel message = new JLabel(SharedLocale.tr("login.defaultMessage"));
     private final JTextField usernameText = new JTextField();
     private final JPasswordField passwordText = new JPasswordField();
     private final JButton loginButton = new JButton(SharedLocale.tr("login.login"));
@@ -55,7 +52,7 @@ public class LoginDialog extends JDialog {
      * @param owner the owner
      * @param launcher the launcher
      */
-    public LoginDialog(Window owner, @NonNull Launcher launcher, Optional<ReloginDetails> reloginDetails) {
+    public LoginDialog(Window owner, @NonNull Launcher launcher) {
         super(owner, ModalityType.DOCUMENT_MODAL);
 
         this.launcher = launcher;
@@ -75,8 +72,6 @@ public class LoginDialog extends JDialog {
                 dispose();
             }
         });
-
-        reloginDetails.ifPresent(details -> message.setText(details.message));
     }
 
     @SuppressWarnings("unchecked")
@@ -85,9 +80,7 @@ public class LoginDialog extends JDialog {
 
         loginButton.setFont(loginButton.getFont().deriveFont(Font.BOLD));
 
-        formPanel.addRow(message);
         formPanel.addRow(new JLabel(SharedLocale.tr("login.idEmail")), usernameText);
-        formPanel.addRow(new JLabel(SharedLocale.tr("login.password")), passwordText);
         buttonsPanel.setBorder(BorderFactory.createEmptyBorder(26, 13, 13, 13));
 
         buttonsPanel.addElement(recoverButton);
@@ -112,20 +105,15 @@ public class LoginDialog extends JDialog {
     @SuppressWarnings("deprecation")
     private void prepareLogin() {
         if (!usernameText.getText().isEmpty()) {
-            String password = passwordText.getText();
-
-            if (password == null || password.isEmpty()) {
-                SwingHelper.showErrorDialog(this, SharedLocale.tr("login.noPasswordError"), SharedLocale.tr("login.noPasswordTitle"));
-            } else {
-                attemptLogin(usernameText.getText(), password);
-            }
+        	attemptLogin(usernameText.getText());
+        
         } else {
             SwingHelper.showErrorDialog(this, SharedLocale.tr("login.noLoginError"), SharedLocale.tr("login.noLoginTitle"));
         }
     }
 
-    private void attemptLogin(String username, String password) {
-        LoginCallable callable = new LoginCallable(username, password);
+    private void attemptLogin(String username) {
+        LoginCallable callable = new LoginCallable(username);
         ObservableFuture<Session> future = new ObservableFuture<Session>(
                 launcher.getExecutor().submit(callable), callable);
 
@@ -150,11 +138,7 @@ public class LoginDialog extends JDialog {
     }
 
     public static Session showLoginRequest(Window owner, Launcher launcher) {
-        return showLoginRequest(owner, launcher, null);
-    }
-
-    public static Session showLoginRequest(Window owner, Launcher launcher, ReloginDetails reloginDetails) {
-        LoginDialog dialog = new LoginDialog(owner, launcher, Optional.ofNullable(reloginDetails));
+        LoginDialog dialog = new LoginDialog(owner, launcher);
         dialog.setVisible(true);
         return dialog.getSession();
     }
@@ -162,12 +146,11 @@ public class LoginDialog extends JDialog {
     @RequiredArgsConstructor
     private class LoginCallable implements Callable<Session>, ProgressObservable {
         private final String username;
-        private final String password;
-
+        
         @Override
         public Session call() throws AuthenticationException, IOException, InterruptedException {
             YggdrasilLoginService service = launcher.getYggdrasil();
-            Session identity = service.login(username, password);
+            Session identity = service.login(username);
 
             // The presence of the identity (profile in Mojang terms) corresponds to whether the account
             // owns the game, so we need to check that
@@ -196,9 +179,4 @@ public class LoginDialog extends JDialog {
         }
     }
 
-    @Data
-    public static class ReloginDetails {
-        private final String username;
-        private final String message;
-    }
 }

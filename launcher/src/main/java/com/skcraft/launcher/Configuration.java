@@ -7,8 +7,6 @@
 package com.skcraft.launcher;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.skcraft.launcher.launch.JavaRuntime;
-import com.skcraft.launcher.launch.JavaRuntimeFinder;
 import lombok.Data;
 
 /**
@@ -24,7 +22,7 @@ import lombok.Data;
 public class Configuration {
 
     private boolean offlineEnabled = false;
-    private JavaRuntime javaRuntime;
+    private String jvmPath;
     private String jvmArgs;
     private int minMemory = 1024;
     private int maxMemory = 0; // Updated in Launcher
@@ -56,14 +54,5 @@ public class Configuration {
      */
     public void setWidowHeight(int height) {
         this.windowHeight = height;
-    }
-
-    /**
-     * Backwards compatibility for old configs with jvmPaths
-     */
-    public void setJvmPath(String jvmPath) {
-        if (jvmPath != null) {
-            this.javaRuntime = JavaRuntimeFinder.getRuntimeFromPath(jvmPath);
-        }
     }
 }

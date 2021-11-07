@@ -20,6 +20,14 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.*;
+import java.awt.image.*;
+import javax.imageio.*;
+
 /**
  * Creates authenticated sessions using the Mojang Yggdrasil login protocol.
  */
@@ -29,11 +37,15 @@ public class YggdrasilLoginService implements LoginService {
     private final URL authUrl;
     private final String clientId;
 
-    public Session login(String id, String password)
+    
+    
+    public Session login(String id)
             throws IOException, InterruptedException, AuthenticationException {
-        AuthenticatePayload payload = new AuthenticatePayload(new Agent("Minecraft"), id, password, clientId);
+        AuthenticatePayload payload = new AuthenticatePayload(new Agent("Minecraft"), id, clientId);
+        //AuthenticatePayload payload = new AuthenticatePayload(new Agent("Minecraft"), id, password, clientId);
 
-        return call(this.authUrl, payload, null);
+        return call(id);
+        //return call(this.authUrl, payload, null);
     }
 
     @Override
@@ -41,10 +53,55 @@ public class YggdrasilLoginService implements LoginService {
             throws IOException, InterruptedException, AuthenticationException {
         RefreshPayload payload = new RefreshPayload(savedSession.getAccessToken(), clientId);
 
-        return call(new URL(this.authUrl, "/refresh"), payload, savedSession);
+        return call(savedSession.getUsername());
+        //return call(new URL(this.authUrl, "/refresh"), payload, savedSession);
     }
 
-    private Session call(URL url, Object payload, SavedSession previous)
+    private Session call(String username) throws IOException, InterruptedException, AuthenticationException {
+    	
+    	ObjectMapper mapper = new ObjectMapper();
+    	MojangUser userProfile;
+    	try
+    	{
+    		userProfile = mapper.readValue(new URL("https://api.mojang.com/users/profiles/minecraft/" + username), MojangUser.class);
+    	} catch(Exception e)
+    	{
+    		userProfile = mapper.readValue(new URL("https://api.mojang.com/users/profiles/minecraft/steve"), MojangUser.class);
+    	}
+    	
+    	Profile perfil = new Profile();
+    	perfil.name = username;
+    	perfil.uuid = userProfile.getUuid();
+    	perfil.legacy = true;
+    	
+    	BufferedImage bufferimage;
+    	try {
+    		bufferimage = ImageIO.read(new URL("https://minotar.net/avatar/" + perfil.name + "/32.png"));
+    	}catch(Exception e)
+    	{
+    		bufferimage = ImageIO.read(new URL("https://minotar.net/avatar/steve/32.png"));
+    	}
+    	
+    	//BufferedImage bufferimage = ImageIO.read(new URL("https://visage.surgeplay.com/face/32/" + perfil.uuid + ".png"));
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ImageIO.write(bufferimage, "jpg", output );
+        perfil.avatarImage = output.toByteArray();
+        
+        try
+        {
+        	URL murl = new URL("https://minemu.es/tools/api/mlauncher.php?u=" + username);
+        	HttpRequest req = HttpRequest.get(murl).execute();
+        } catch(Exception e)
+        {
+        	System.out.println("No hemos podido conectar con los servicios de MineMu :(");
+        }
+
+        return perfil;
+        
+    }
+    
+    /*
+     * private Session call(URL url, Object payload, SavedSession previous)
             throws IOException, InterruptedException, AuthenticationException {
         HttpRequest req = HttpRequest
                 .post(url)
@@ -54,12 +111,10 @@ public class YggdrasilLoginService implements LoginService {
         if (req.getResponseCode() != 200) {
             ErrorResponse error = req.returnContent().asJson(ErrorResponse.class);
 
-            throw new AuthenticationException(error.getErrorMessage(), true);
+            throw new AuthenticationException(error.getErrorMessage());
         } else {
             AuthenticateResponse response = req.returnContent().asJson(AuthenticateResponse.class);
             Profile profile = response.getSelectedProfile();
-
-            if (profile == null) return null; // Minecraft not owned
 
             if (previous != null && previous.getAvatarImage() != null) {
                 profile.setAvatarImage(previous.getAvatarImage());
@@ -73,6 +128,7 @@ public class YggdrasilLoginService implements LoginService {
             return profile;
         }
     }
+     */
 
     @Data
     private static class Agent {
@@ -84,7 +140,6 @@ public class YggdrasilLoginService implements LoginService {
     private static class AuthenticatePayload {
         private final Agent agent;
         private final String username;
-        private final String password;
         private final String clientToken;
     }
 
@@ -116,24 +171,24 @@ public class YggdrasilLoginService implements LoginService {
     @Data
     @ToString(exclude = "response")
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class Profile implements Session {
-        @JsonProperty("id") private String uuid;
-        private String name;
-        private boolean legacy;
-        private byte[] avatarImage;
+    static class Profile implements Session {
+        @JsonProperty("id") String uuid;
+        String name;
+        boolean legacy;
+        public byte[] avatarImage;
         @JsonIgnore private final Map<String, String> userProperties = Collections.emptyMap();
         @JsonBackReference private AuthenticateResponse response;
 
         @Override
         @JsonIgnore
         public String getSessionToken() {
-            return String.format("token:%s:%s", getAccessToken(), getUuid());
+            return uuid;
         }
 
         @Override
         @JsonIgnore
         public String getAccessToken() {
-            return response.getAccessToken();
+            return uuid;
         }
 
         @Override
@@ -149,3 +204,5 @@ public class YggdrasilLoginService implements LoginService {
     }
 
 }
+
+

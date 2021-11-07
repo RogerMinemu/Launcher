@@ -34,4 +34,9 @@ public class SavedSession {
 				.append(uuid)
 				.toHashCode();
 	}
+	
+	public String getUsername()
+	{
+		return this.username;
+	}
 }

@@ -43,7 +43,6 @@ public class PackManagerFrame extends JFrame {
     @Getter private final JMenuItem testMenuItem = new JMenuItem("Test");
     @Getter private final JMenuItem testOnlineMenuItem = new JMenuItem("Test Online");
     @Getter private final JMenuItem optionsMenuItem = new JMenuItem("Test Launcher Options...");
-    @Getter private final JMenuItem instanceOptionsMenuItem = new JMenuItem("Test Instance Options...");
     @Getter private final JMenuItem clearInstanceMenuItem = new JMenuItem("Delete Test Launcher Instances");
     @Getter private final JMenuItem clearWebRootMenuItem = new JMenuItem("Empty Test Web Server");
     @Getter private final JMenuItem buildMenuItem = new JMenuItem("Build Pack...");
@@ -164,7 +163,6 @@ public class PackManagerFrame extends JFrame {
         menu.add(testOnlineMenuItem);
         menu.addSeparator();
         menu.add(optionsMenuItem);
-        menu.add(instanceOptionsMenuItem);
         menu.addSeparator();
         menu.add(clearInstanceMenuItem);
         menu.add(clearWebRootMenuItem);

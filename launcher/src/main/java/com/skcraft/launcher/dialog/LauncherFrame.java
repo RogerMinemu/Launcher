@@ -114,6 +114,7 @@ public class LauncherFrame extends JFrame {
         container.add(selfUpdateButton);
         container.add(optionsButton);
         container.add(launchButton);
+        this.setResizable(false);
 
         add(container, BorderLayout.CENTER);
 
@@ -238,12 +239,6 @@ public class LauncherFrame extends JFrame {
                         dir.mkdirs();
                         SwingHelper.setClipboard(dir.getAbsolutePath());
                     }
-                });
-                popup.add(menuItem);
-
-                menuItem = new JMenuItem(SharedLocale.tr("instance.openSettings"));
-                menuItem.addActionListener(e -> {
-                    InstanceSettingsDialog.open(this, selected);
                 });
                 popup.add(menuItem);
 

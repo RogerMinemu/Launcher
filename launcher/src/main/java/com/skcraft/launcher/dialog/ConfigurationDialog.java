@@ -8,22 +8,15 @@ package com.skcraft.launcher.dialog;
 
 import com.skcraft.launcher.Configuration;
 import com.skcraft.launcher.Launcher;
-import com.skcraft.launcher.dialog.component.BetterComboBox;
-import com.skcraft.launcher.launch.AddJavaRuntime;
-import com.skcraft.launcher.launch.JavaRuntime;
-import com.skcraft.launcher.launch.JavaRuntimeFinder;
 import com.skcraft.launcher.persistence.Persistence;
 import com.skcraft.launcher.swing.*;
 import com.skcraft.launcher.util.SharedLocale;
 import lombok.NonNull;
 
 import javax.swing.*;
-import javax.swing.filechooser.FileFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.util.Arrays;
 
 /**
  * A dialog to modify configuration options.
@@ -36,7 +29,7 @@ public class ConfigurationDialog extends JDialog {
     private final JPanel tabContainer = new JPanel(new BorderLayout());
     private final JTabbedPane tabbedPane = new JTabbedPane();
     private final FormPanel javaSettingsPanel = new FormPanel();
-    private final JComboBox<JavaRuntime> jvmRuntime = new BetterComboBox<>();
+    private final JTextField jvmPathText = new JTextField();
     private final JTextField jvmArgsText = new JTextField();
     private final JSpinner minMemorySpinner = new JSpinner();
     private final JSpinner maxMemorySpinner = new JSpinner();
@@ -77,20 +70,7 @@ public class ConfigurationDialog extends JDialog {
         setResizable(false);
         setLocationRelativeTo(owner);
 
-        JavaRuntime[] javaRuntimes = JavaRuntimeFinder.getAvailableRuntimes().toArray(new JavaRuntime[0]);
-        DefaultComboBoxModel<JavaRuntime> model = new DefaultComboBoxModel<>(javaRuntimes);
-
-        // Put the runtime from the config in the model if it isn't
-        boolean configRuntimeFound = Arrays.stream(javaRuntimes).anyMatch(r -> r.equals(config.getJavaRuntime()));
-        if (!configRuntimeFound && config.getJavaRuntime() != null) {
-            model.insertElementAt(config.getJavaRuntime(), 0);
-        }
-
-        jvmRuntime.setModel(model);
-        jvmRuntime.setSelectedItem(config.getJavaRuntime());
-
-        jvmRuntime.addItem(AddJavaRuntime.ADD_RUNTIME_SENTINEL);
-
+        mapper.map(jvmPathText, "jvmPath");
         mapper.map(jvmArgsText, "jvmArgs");
         mapper.map(minMemorySpinner, "minMemory");
         mapper.map(maxMemorySpinner, "maxMemory");
@@ -108,7 +88,7 @@ public class ConfigurationDialog extends JDialog {
     }
 
     private void initComponents() {
-        javaSettingsPanel.addRow(new JLabel(SharedLocale.tr("options.jvmPath")), jvmRuntime);
+        javaSettingsPanel.addRow(new JLabel(SharedLocale.tr("options.jvmPath")), jvmPathText);
         javaSettingsPanel.addRow(new JLabel(SharedLocale.tr("options.jvmArguments")), jvmArgsText);
         javaSettingsPanel.addRow(Box.createVerticalStrut(15));
         javaSettingsPanel.addRow(new JLabel(SharedLocale.tr("options.64BitJavaWarning")));
@@ -170,28 +150,6 @@ public class ConfigurationDialog extends JDialog {
                 ConsoleFrame.showMessages();
             }
         });
-
-        jvmRuntime.addActionListener(e -> {
-            // A little fun hack...
-            if (jvmRuntime.getSelectedItem() == AddJavaRuntime.ADD_RUNTIME_SENTINEL) {
-                jvmRuntime.setSelectedItem(null);
-                jvmRuntime.setPopupVisible(false);
-
-                JFileChooser chooser = new JFileChooser();
-                chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-                chooser.setFileFilter(new JavaRuntimeFileFilter());
-                chooser.setDialogTitle("Choose a Java executable");
-
-                int result = chooser.showOpenDialog(this);
-                if (result == JFileChooser.APPROVE_OPTION) {
-                    JavaRuntime runtime = JavaRuntimeFinder.getRuntimeFromPath(chooser.getSelectedFile().getAbsolutePath());
-
-                    MutableComboBoxModel<JavaRuntime> model = (MutableComboBoxModel<JavaRuntime>) jvmRuntime.getModel();
-                    model.insertElementAt(runtime, 0);
-                    jvmRuntime.setSelectedItem(runtime);
-                }
-            }
-        });
     }
 
     /**
@@ -199,21 +157,7 @@ public class ConfigurationDialog extends JDialog {
      */
     public void save() {
         mapper.copyFromSwing();
-        config.setJavaRuntime((JavaRuntime) jvmRuntime.getSelectedItem());
-
         Persistence.commitAndForget(config);
         dispose();
-    }
-
-    static class JavaRuntimeFileFilter extends FileFilter {
-        @Override
-        public boolean accept(File f) {
-            return f.isDirectory() || f.getName().startsWith("java") && f.canExecute();
-        }
-
-        @Override
-        public String getDescription() {
-            return "Java runtime executables";
-        }
     }
 }
