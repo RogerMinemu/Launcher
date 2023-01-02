@@ -7,26 +7,19 @@
 package com.skcraft.launcher.auth;
 
 import com.fasterxml.jackson.annotation.*;
-import com.skcraft.launcher.auth.microsoft.MinecraftServicesAuthorizer;
-import com.skcraft.launcher.auth.microsoft.model.McProfileResponse;
-import com.skcraft.launcher.auth.skin.MinecraftSkinService;
 import com.skcraft.launcher.util.HttpRequest;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.*;
-import java.awt.image.*;
-import javax.imageio.*;
+import javax.imageio.ImageIO;
 
 /**
  * Creates authenticated sessions using the Mojang Yggdrasil login protocol.
@@ -37,98 +30,70 @@ public class YggdrasilLoginService implements LoginService {
     private final URL authUrl;
     private final String clientId;
 
-    
-    
     public Session login(String id)
             throws IOException, InterruptedException, AuthenticationException {
-        AuthenticatePayload payload = new AuthenticatePayload(new Agent("Minecraft"), id, clientId);
-        //AuthenticatePayload payload = new AuthenticatePayload(new Agent("Minecraft"), id, password, clientId);
+        //AuthenticatePayload payload = new AuthenticatePayload(new Agent("Minecraft"), id, clientId);
 
         return call(id);
-        //return call(this.authUrl, payload, null);
     }
 
     @Override
     public Session restore(SavedSession savedSession)
-            throws IOException, InterruptedException, AuthenticationException {
-        RefreshPayload payload = new RefreshPayload(savedSession.getAccessToken(), clientId);
-
+    {
         return call(savedSession.getUsername());
-        //return call(new URL(this.authUrl, "/refresh"), payload, savedSession);
     }
 
-    private Session call(String username) throws IOException, InterruptedException, AuthenticationException {
+    private Session call(String id)
+    {
+    	//bufferimage = ImageIO.read(new URL("https://minotar.net/avatar/" + perfil.name + "/32.png"));
     	
-    	ObjectMapper mapper = new ObjectMapper();
-    	MojangUser userProfile;
-    	try
-    	{
-    		userProfile = mapper.readValue(new URL("https://api.mojang.com/users/profiles/minecraft/" + username), MojangUser.class);
-    	} catch(Exception e)
-    	{
-    		userProfile = mapper.readValue(new URL("https://api.mojang.com/users/profiles/minecraft/steve"), MojangUser.class);
-    	}
+    	Profile profile = new Profile();
+    	profile.uuid = "2e9d879a3d9541c7bda9d587e64a86c8";
+    	profile.name = id;
+    	profile.legacy = false;
     	
-    	Profile perfil = new Profile();
-    	perfil.name = username;
-    	perfil.uuid = userProfile.getUuid();
-    	perfil.legacy = true;
-    	
-    	BufferedImage bufferimage;
-    	try {
-    		bufferimage = ImageIO.read(new URL("https://minotar.net/avatar/" + perfil.name + "/32.png"));
+    	try{
+    		//https://minemu.es/tools/api/mlauncher.php?u=alextititoto
+    		URL mapi = new URL("https://minemu.es/tools/api/mlauncher.php?u=" + id);
+    		mapi.openConnection();
+    		
+    		BufferedImage bufferimage = ImageIO.read(new URL("https://minotar.net/avatar/" + id + "/32.png"));
+        	ByteArrayOutputStream output = new ByteArrayOutputStream();
+            ImageIO.write(bufferimage, "jpg", output );
+            profile.avatarImage  = output.toByteArray();
+            
+            System.out.println("CORRECTO, RETURN PROFILE");
+        	
+            return profile;    		
     	}catch(Exception e)
     	{
-    		bufferimage = ImageIO.read(new URL("https://minotar.net/avatar/steve/32.png"));
+    		e.printStackTrace();
     	}
     	
-    	//BufferedImage bufferimage = ImageIO.read(new URL("https://visage.surgeplay.com/face/32/" + perfil.uuid + ".png"));
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ImageIO.write(bufferimage, "jpg", output );
-        perfil.avatarImage = output.toByteArray();
-        
-        try
-        {
-        	URL murl = new URL("https://minemu.es/tools/api/mlauncher.php?u=" + username);
-        	HttpRequest req = HttpRequest.get(murl).execute();
-        } catch(Exception e)
-        {
-        	System.out.println("No hemos podido conectar con los servicios de MineMu :(");
-        }
-
-        return perfil;
-        
-    }
-    
-    /*
-     * private Session call(URL url, Object payload, SavedSession previous)
-            throws IOException, InterruptedException, AuthenticationException {
-        HttpRequest req = HttpRequest
-                .post(url)
-                .bodyJson(payload)
-                .execute();
-
+    	System.out.println("ERROR, RETURN NO IMAGE");
+    	return profile;
+    	/*
         if (req.getResponseCode() != 200) {
             ErrorResponse error = req.returnContent().asJson(ErrorResponse.class);
 
-            throw new AuthenticationException(error.getErrorMessage());
+            throw new AuthenticationException(error.getErrorMessage(), true);
         } else {
             AuthenticateResponse response = req.returnContent().asJson(AuthenticateResponse.class);
             Profile profile = response.getSelectedProfile();
 
+            if (profile == null) return null; // Minecraft not owned
+
             if (previous != null && previous.getAvatarImage() != null) {
                 profile.setAvatarImage(previous.getAvatarImage());
-            } else {
-                McProfileResponse skinProfile = MinecraftServicesAuthorizer
-                        .getUserProfile("Bearer " + response.getAccessToken());
-
-                profile.setAvatarImage(MinecraftSkinService.fetchSkinHead(skinProfile));
             }
+
+            // DEPRECEATION: minecraft services API no longer accepts yggdrasil tokens
+            // login still works though. until it doesn't, this class will remain
 
             return profile;
         }
+        */
     }
-     */
 
     @Data
     private static class Agent {
@@ -140,6 +105,7 @@ public class YggdrasilLoginService implements LoginService {
     private static class AuthenticatePayload {
         private final Agent agent;
         private final String username;
+        private final String password;
         private final String clientToken;
     }
 
@@ -171,30 +137,30 @@ public class YggdrasilLoginService implements LoginService {
     @Data
     @ToString(exclude = "response")
     @JsonIgnoreProperties(ignoreUnknown = true)
-    static class Profile implements Session {
-        @JsonProperty("id") String uuid;
-        String name;
-        boolean legacy;
-        public byte[] avatarImage;
+    private static class Profile implements Session {
+        @JsonProperty("id") private String uuid;
+        private String name;
+        private boolean legacy;
+        private byte[] avatarImage;
         @JsonIgnore private final Map<String, String> userProperties = Collections.emptyMap();
         @JsonBackReference private AuthenticateResponse response;
 
         @Override
         @JsonIgnore
         public String getSessionToken() {
-            return uuid;
+        	return "xddd";
         }
 
         @Override
         @JsonIgnore
         public String getAccessToken() {
-            return uuid;
+            return "xddd";
         }
 
         @Override
         @JsonIgnore
         public UserType getUserType() {
-            return legacy ? UserType.LEGACY : UserType.MOJANG;
+            return UserType.MOJANG;
         }
 
         @Override
@@ -204,5 +170,3 @@ public class YggdrasilLoginService implements LoginService {
     }
 
 }
-
-

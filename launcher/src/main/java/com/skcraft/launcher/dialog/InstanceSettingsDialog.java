@@ -3,9 +3,9 @@ package com.skcraft.launcher.dialog;
 import com.skcraft.launcher.Instance;
 import com.skcraft.launcher.InstanceSettings;
 import com.skcraft.launcher.dialog.component.BetterComboBox;
-import com.skcraft.launcher.launch.JavaRuntime;
-import com.skcraft.launcher.launch.JavaRuntimeFinder;
 import com.skcraft.launcher.launch.MemorySettings;
+import com.skcraft.launcher.launch.runtime.JavaRuntime;
+import com.skcraft.launcher.launch.runtime.JavaRuntimeFinder;
 import com.skcraft.launcher.persistence.Persistence;
 import com.skcraft.launcher.swing.FormPanel;
 import com.skcraft.launcher.swing.LinedBoxPanel;
@@ -57,7 +57,7 @@ public class InstanceSettingsDialog extends JDialog {
 		javaRuntimeBox.setModel(new DefaultComboBoxModel<>(javaRuntimes));
 
 		runtimePanel.addRow(enableCustomRuntime);
-		runtimePanel.addRow(new JLabel(SharedLocale.tr("options.jvmPath")), javaRuntimeBox);
+		runtimePanel.addRow(new JLabel(SharedLocale.tr("options.jvmRuntime")), javaRuntimeBox);
 		runtimePanel.addRow(new JLabel(SharedLocale.tr("options.jvmArguments")), javaArgsBox);
 
 		okButton.setMargin(new Insets(0, 10, 0, 10));

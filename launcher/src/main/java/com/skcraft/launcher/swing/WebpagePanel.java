@@ -9,7 +9,6 @@ package com.skcraft.launcher.swing;
 import com.skcraft.launcher.LauncherUtils;
 import lombok.extern.java.Log;
 
-import javax.net.ssl.HttpsURLConnection;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
@@ -25,8 +24,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Level;
 
 import static com.skcraft.launcher.LauncherUtils.checkInterrupted;
@@ -247,31 +244,26 @@ public final class WebpagePanel extends JPanel {
         
         @Override
         public void run() {
-        	
-            HttpsURLConnection conn = null;
-            
+            HttpURLConnection conn = null;
+
             try {
-            	url = new URL("https://minemu.es/updates3/news.html");
-                conn = (HttpsURLConnection)url.openConnection();
+                conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setUseCaches(false);
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Java) Minemu Launcher");
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Java) SKMCLauncher");
                 conn.setDoInput(true);
                 conn.setDoOutput(false);
                 conn.setReadTimeout(5000);
-                conn.setInstanceFollowRedirects(true);
 
                 conn.connect();
 
                 checkInterrupted();
-                
-                
-                if (conn.getResponseCode() != 200) 
-                {
+
+                if (conn.getResponseCode() != 200) {
                     throw new IOException(
-                            "Los gatitos de MineMu no nos han enviado los whiskas 200, hemos recibido los whiskas " + conn.getResponseCode());
+                            "Did not get expected 200 code, got "
+                                    + conn.getResponseCode());
                 }
-                
 
                 BufferedReader reader = new BufferedReader(
                         new InputStreamReader(conn.getInputStream(),
@@ -293,8 +285,8 @@ public final class WebpagePanel extends JPanel {
                     return;
                 }
                 
-                log.log(Level.WARNING, "Nuestros gatetes no han podido conseguir las noticias de MineMu :(", e);
-                setError("Nuestros gatetes no han podido conseguir las noticias de MineMu :( " + e.getMessage());
+                log.log(Level.WARNING, "Failed to fetch page", e);
+                setError("Failed to fetch page: " + e.getMessage());
             } catch (InterruptedException e) {
             } finally {
                 if (conn != null)
@@ -302,7 +294,6 @@ public final class WebpagePanel extends JPanel {
                 conn = null;
             }
         }
-        
     }
 
 }

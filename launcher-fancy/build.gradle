@@ -4,7 +4,9 @@ plugins {
     id 'io.freefair.lombok'
 }
 
-mainClassName = "com.skcraft.launcher.FancyLauncher"
+application {
+    mainClassName = "com.skcraft.launcher.FancyLauncher"
+}
 
 repositories {
     maven {
@@ -14,11 +16,21 @@ repositories {
 }
 
 dependencies {
-    compile project(':launcher')
-    compile 'io.github.cottonmc.insubstantial:substance:7.3.1-SNAPSHOT'
+    implementation project(path: ':launcher')
+    implementation 'io.github.cottonmc.insubstantial:substance:7.3.1-SNAPSHOT'
 }
 
 shadowJar {
+    dependsOn ':launcher:shadowJar'
+    archiveClassifier.set("")
 }
 
-build.dependsOn(shadowJar)
+// Work around gradle shadow bug
+// see https://github.com/johnrengelman/shadow/issues/713
+startScripts.dependsOn(':launcher:shadowJar')
+distTar.dependsOn(':launcher:shadowJar')
+distZip.dependsOn(':launcher:shadowJar')
+
+build {
+    dependsOn(shadowJar)
+}

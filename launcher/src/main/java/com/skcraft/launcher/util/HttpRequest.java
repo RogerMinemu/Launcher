@@ -233,6 +233,28 @@ public class HttpRequest implements Closeable, ProgressObservable {
     }
 
     /**
+     * Continue if the content type matches, otherwise throw an exception
+     *
+     * @param expectedTypes Expected content-type(s)
+     * @return this object
+     * @throws IOException Unexpected content-type or other error
+     */
+    public HttpRequest expectContentType(String... expectedTypes) throws IOException {
+        if (conn == null) throw new IllegalArgumentException("No connection has been made!");
+
+        String contentType = conn.getHeaderField("Content-Type");
+        for (String expectedType : expectedTypes) {
+            if (expectedType.equals(contentType)) {
+                return this;
+            }
+        }
+
+        close();
+        throw new IOException(String.format("Did not get expected content type '%s', instead got '%s'.",
+                String.join(" | ", expectedTypes), contentType));
+    }
+
+    /**
      * Get the response code.
      *
      * @return the response code
@@ -263,6 +285,15 @@ public class HttpRequest implements Closeable, ProgressObservable {
      */
     public InputStream getInputStream() {
         return inputStream;
+    }
+
+    /**
+     * Check if a connection was ever made
+     *
+     * @return True if a connection is available, false otherwise
+     */
+    public boolean isConnected() {
+        return conn != null;
     }
 
     /**
@@ -549,7 +580,7 @@ public class HttpRequest implements Closeable, ProgressObservable {
          * @return the object
          * @throws java.io.IOException on I/O error
          */
-        public <T> T asJson(TypeReference type) throws IOException {
+        public <T> T asJson(TypeReference<T> type) throws IOException {
             return mapper.readValue(asString("UTF-8"), type);
         }
 

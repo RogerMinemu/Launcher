@@ -31,8 +31,6 @@ public class FancyLauncher {
                     JDialog.setDefaultLookAndFeelDecorated(true);
                     System.setProperty("sun.awt.noerasebackground", "true");
                     System.setProperty("substancelaf.windowRoundedCorners", "false");
-                    System.setProperty("awt.useSystemAAFontSettings","on");
-                    System.setProperty("swing.aatext", "true");
 
                     if (!SwingHelper.setLookAndFeel("com.skcraft.launcher.skin.LauncherLookAndFeel")) {
                         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

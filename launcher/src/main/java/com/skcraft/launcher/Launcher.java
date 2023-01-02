@@ -76,7 +76,6 @@ public final class Launcher {
      */
     public Launcher(@NonNull File baseDir) throws IOException {
         this(baseDir, baseDir);
-        
     }
 
     /**
@@ -123,7 +122,7 @@ public final class Launcher {
             if (available <= 6) {
                 suggestedMax = available * 0.48;
             } else {
-                suggestedMax = 7;
+                suggestedMax = 4;
             }
         } catch (Exception ignored) {
         }
@@ -416,7 +415,7 @@ public final class Launcher {
      */
     public static Launcher createFromArguments(String[] args) throws ParameterException, IOException {
         LauncherArguments options = new LauncherArguments();
-        new JCommander(options, args);
+        new JCommander(options).parse(args);
 
         Integer bsVersion = options.getBootstrapVersion();
         log.info(bsVersion != null ? "Bootstrap version " + bsVersion + " detected" : "Not bootstrapped");
@@ -458,8 +457,8 @@ public final class Launcher {
                     launcher.showLauncherWindow();
                 } catch (Throwable t) {
                     log.log(Level.WARNING, "Load failure", t);
-                    SwingHelper.showErrorDialog(null, "Ups " +
-                            " hemos encontrado un problema :S.", "Reportalo en discord", t);
+                    SwingHelper.showErrorDialog(null, "Uh oh! The updater couldn't be opened because a " +
+                            "problem was encountered.", "Launcher error", t);
                 }
             }
         });
